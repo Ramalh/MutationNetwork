@@ -10,14 +10,16 @@ conda env create -f invMutMapper.yml
 
 ## Usage
 
-usage: python invMutMapper.py [-h] --bed_files BED_FILES [BED_FILES ...] [-o [OUTPUT]] --bedpe_files BEDPE_FILES [BEDPE_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-dg [DRIVERGENES]] -md METADATA
+usage: python invMutMapper.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-dg [DRIVERGENES]] -md METADATA
+
+Example: python InvMutMapper.py --bedpe\_files bedpe/\*.bedpe.gz --bed\_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v
 
 ## Input Files
 
-bedpe_files -- 
+bedpe\_files -- 
 
-bed_file --
+bed\_file --
 
-driver_genes --
+driver\_genes --
 
 metadata --
