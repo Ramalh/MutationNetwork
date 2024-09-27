@@ -6,7 +6,7 @@ Script can be install via github directly with example input data.
 
 ### conda env
 
-conda env create -f invMutMapper.yml
+conda create --name mutation\_network --file requirements.txt
 
 ## Usage
 
