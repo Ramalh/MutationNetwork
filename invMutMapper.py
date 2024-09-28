@@ -153,24 +153,24 @@ def read_driver_genes(filename):
 		dtype = {0: object, 1: int, 2: object, 3: object, 4: int, 5: int})
 	#genes.chromosome = "chr" + genes.chromosome
 	genes.chromosome = genes.chromosome.str.replace("chr", "")
-	genes_array = genes.iloc[:,[0, 3, 4, 5]].values
+	genes_array = genes.iloc[:,[0, 2, 3, 4, 5]].values
 	
 	return genes_array
 
 
 def find_driver_overlaps(genes, intervals):
 	
-	onco_interval_id = set()
-	ts_interval_id = set()
+	onco_interval_id = dict()
+	ts_interval_id = dict()
 	for i in genes[genes[:,0] == "oncogene", :]:
-		for j in intervals[ ((i[2] < intervals[:, 0]) & (intervals[:, 0] < i[3])) \
-				| ((i[3] < intervals[:, 1]) & (intervals[:, 1] < i[3])) ]:
-			onco_interval_id.add(j[2])
+		for j in intervals[ ((i[3] < intervals[:, 0]) & (intervals[:, 0] < i[4])) \
+				| ((i[3] < intervals[:, 1]) & (intervals[:, 1] < i[4])) ]:
+			onco_interval_id[j[2]] = i[1]
 	
 	for i in genes[genes[:,0] == "tumorSuppressor", :]:
-		for j in intervals[ ((i[2] < intervals[:, 0]) & (intervals[:, 0] < i[3])) \
-				| ((i[2] < intervals[:, 1]) & (intervals[:, 1] < i[3])) ]:
-			ts_interval_id.add(j[2])
+		for j in intervals[ ((i[3] < intervals[:, 0]) & (intervals[:, 0] < i[4])) \
+				| ((i[3] < intervals[:, 1]) & (intervals[:, 1] < i[4])) ]:
+			ts_interval_id[j[2]] = i[1]
 	
 	return onco_interval_id, ts_interval_id
 
@@ -181,7 +181,7 @@ def counter(array, initials, scores, onco_interval_id, ts_interval_id):
 		if onco_interval_id == None:
 			return [0, 0, 0, 0, 0.0]
 		else:
-			return [0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0]
+			return [0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	
 	# assing initial interval to visited intervals
 	visited_intervals = set( initials )
@@ -224,36 +224,62 @@ def counter(array, initials, scores, onco_interval_id, ts_interval_id):
 	if onco_interval_id == None:
 		return [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
 				cycle_counter, round(score_counter/interaction_counter,2)]
-	else:
+	else:		
 		paths = nx.single_source_dijkstra_path_length(G, 0, cutoff=30)
-		onco_len_5 = 0
-		onco_len_10 = 0
-		onco_len_20 = 0
-		onco_len_30 = len(paths.keys() & onco_interval_id)
-		for i in paths.keys() & onco_interval_id:
+		onco_inv_5 = 0
+		onco_inv_10 = 0
+		onco_inv_20 = 0
+		onco_inv_30 = len(paths.keys() & onco_interval_id.keys())
+		onco_5_set = set()
+		onco_10_set = set()
+		onco_20_set = set()
+		onco_30_set = set()
+		for i in paths.keys() & onco_interval_id.keys():
 			if paths[i] <= 5:
-				onco_len_5 += 1
+				onco_inv_5 += 1
+				onco_5_set.add(onco_interval_id[i])
 			if paths[i] <= 10:
-				onco_len_10 += 1
+				onco_inv_10 += 1
+				onco_10_set.add(onco_interval_id[i])
 			if paths[i] <= 20:
-				onco_len_20 += 1
+				onco_inv_20 += 1
+				onco_20_set.add(onco_interval_id[i])
+			onco_30_set.add(onco_interval_id[i])
+		onco_gene_5 = len(onco_5_set)
+		onco_gene_10 = len(onco_10_set)
+		onco_gene_20 = len(onco_20_set)
+		onco_gene_30 = len(onco_30_set)
 		
-		ts_len_5 = 0
-		ts_len_10 = 0
-		ts_len_20 = 0
-		ts_len_30 = len(paths.keys() & ts_interval_id)
-		for i in paths.keys() & ts_interval_id:
+		ts_inv_5 = 0
+		ts_inv_10 = 0
+		ts_inv_20 = 0
+		ts_inv_30 = len(paths.keys() & onco_interval_id.keys())
+		ts_5_set = set()
+		ts_10_set = set()
+		ts_20_set = set()
+		ts_30_set = set()
+		for i in paths.keys() & ts_interval_id.keys():
 			if paths[i] <= 5:
-				onco_len_5 += 1
+				ts_inv_5 += 1
+				ts_5_set.add(ts_interval_id[i])
 			if paths[i] <= 10:
-				onco_len_10 += 1
+				ts_inv_10 += 1
+				ts_10_set.add(ts_interval_id[i])
 			if paths[i] <= 20:
-				onco_len_20 += 1
+				ts_inv_20 += 1
+				ts_20_set.add(ts_interval_id[i])
+			ts_30_set.add(ts_interval_id[i])
+		ts_gene_5 = len(ts_5_set)
+		ts_gene_10 = len(ts_10_set)
+		ts_gene_20 = len(ts_20_set)
+		ts_gene_30 = len(ts_30_set)
 		
 		return [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
 				cycle_counter, round(score_counter/interaction_counter,2), \
-				onco_len_5, onco_len_10, onco_len_20, onco_len_30, \
-				ts_len_5, ts_len_10, ts_len_20, ts_len_30]
+				onco_inv_5, onco_gene_5, onco_inv_10, onco_gene_10, \
+				onco_inv_20, onco_gene_20, onco_inv_30, onco_gene_30,\
+				ts_inv_5, ts_gene_5, ts_inv_10, ts_gene_10, \
+				ts_inv_20, ts_gene_20, ts_inv_30, ts_gene_30]
 
 
 def worker(bedpe_filename, bed_filenames):
@@ -271,10 +297,13 @@ def worker(bedpe_filename, bed_filenames):
 		
 		result_file = bed_file.loc[:, ["chr", "start", "end", "start_hg19", "driver"]].copy()
 		columns =["intervals", "interactions", "overlaps", \
-				"cycles", "score", "onco_range_5", \
-				"onco_range_10", "onco_range_20" ,"onco_range_30",\
-				"ts_range_5", "ts_range_10","ts_range_20", "ts_range_30"]
-	
+				"cycles", "score", "onco_range_5", "onco_range_5_gene", \
+				"onco_range_10", "onco_range_10_gene", "onco_range_20" ,\
+				"onco_range_20_gene", "onco_range_30", "onco_range_30_gene",\
+				"ts_range_5", "ts_range_5_gene", \
+				"ts_range_10", "ts_range_10_gene", "ts_range_20" ,\
+				"ts_range_20_gene", "ts_range_30", "ts_range_30_gene"]
+		
 		if genes is None:
 			columns = columns[:5]
 		
@@ -297,7 +326,7 @@ def worker(bedpe_filename, bed_filenames):
 			if genes is None:
 				onco_interval_id, ts_interval_id = None, None
 			else:
-				filtered_genes = genes[genes[:, 1] == common_chromosome, :]
+				filtered_genes = genes[genes[:, 2] == common_chromosome, :]
 				onco_interval_id, ts_interval_id = find_driver_overlaps(filtered_genes, intervals)
 			
 			for mutation in mutations:
