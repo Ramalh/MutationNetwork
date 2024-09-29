@@ -32,7 +32,9 @@ metadata --
 
 ### Step 2: flowchart
 
-![image](img/flowchart.png)
+<p align="center">
+  <img src="img/flowchart.png" />
+</p>
 
 ## Result file columns
 
