@@ -24,6 +24,16 @@ driver\_genes --
 
 metadata --
 
+## Method
+
+### Step 1: processing bedpe
+
+![image](img/method_explanation.png)
+
+### Step 2: flowchart
+
+![image](img/flowchart.png)
+
 ## Result file columns
 
 intervals - number of intervals that the given mutation affects directly or indirectly
@@ -39,4 +49,5 @@ score - average score of the interactions between intervals that the given mutat
 onco/ts\_range\_X - number of intervals that has overlap with given onco/ts genes within X range
 
 onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from the mutation in the graph
+
 
