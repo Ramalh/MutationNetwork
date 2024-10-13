@@ -52,4 +52,5 @@ onco/ts\_range\_X - number of intervals that has overlap with given onco/ts gene
 
 onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from the mutation in the graph
 
+onco/ts\_range\_X\_lis - name of genes that has shortes path lenght of X from the mutation in the graph
 
