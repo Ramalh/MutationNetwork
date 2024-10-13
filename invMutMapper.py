@@ -181,7 +181,8 @@ def counter(array, initials, scores, onco_interval_id, ts_interval_id):
 		if onco_interval_id == None:
 			return [0, 0, 0, 0, 0.0]
 		else:
-			return [0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			return [0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0, 0, \
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	
 	# assing initial interval to visited intervals
 	visited_intervals = set( initials )
@@ -276,11 +277,14 @@ def counter(array, initials, scores, onco_interval_id, ts_interval_id):
 		
 		return [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
 				cycle_counter, round(score_counter/interaction_counter,2), \
-				onco_inv_5, onco_gene_5, onco_inv_10, onco_gene_10, \
-				onco_inv_20, onco_gene_20, onco_inv_30, onco_gene_30,\
-				ts_inv_5, ts_gene_5, ts_inv_10, ts_gene_10, \
-				ts_inv_20, ts_gene_20, ts_inv_30, ts_gene_30]
-
+				onco_inv_5, onco_gene_5, "|".join(list(onco_5_set)), onco_inv_10, \
+				onco_gene_10, "|".join(list(onco_10_set)), onco_inv_20, onco_gene_20,\
+				"|".join(list(onco_20_set)), onco_inv_30, onco_gene_30, \
+				"|".join(list(onco_30_set)), ts_inv_5, ts_gene_5, \
+				"|".join(list(ts_5_set)), ts_inv_10, ts_gene_10, \
+				"|".join(list(ts_10_set)), ts_inv_20, ts_gene_20, \
+				"|".join(list(ts_20_set)), ts_inv_30, ts_gene_30, \
+				"|".join(list(ts_30_set))]
 
 def worker(bedpe_filename, bed_filenames):
 	base_bedpe_name = os.path.basename(bedpe_filename).split(".")[0]
@@ -297,12 +301,15 @@ def worker(bedpe_filename, bed_filenames):
 		
 		result_file = bed_file.loc[:, ["chr", "start", "end", "start_hg19", "driver"]].copy()
 		columns =["intervals", "interactions", "overlaps", \
-				"cycles", "score", "onco_range_5", "onco_range_5_gene", \
-				"onco_range_10", "onco_range_10_gene", "onco_range_20" ,\
-				"onco_range_20_gene", "onco_range_30", "onco_range_30_gene",\
-				"ts_range_5", "ts_range_5_gene", \
-				"ts_range_10", "ts_range_10_gene", "ts_range_20" ,\
-				"ts_range_20_gene", "ts_range_30", "ts_range_30_gene"]
+				"cycles", "score", "onco_range_5", "onco_range_5_gene",\
+				"onco_range_5_list", "onco_range_10", "onco_range_10_gene",\
+				"onco_range_10_list", "onco_range_20", "onco_range_20_gene",\
+				"onco_range_20_list", "onco_range_30", "onco_range_30_gene",\
+				"onco_range_30_list", "ts_range_5", "ts_range_5_gene", \
+				"ts_range_5_list", "ts_range_10", "ts_range_10_gene", \
+				"ts_range_10_list", "ts_range_20", "ts_range_20_gene",\
+				"ts_range_20_list", "ts_range_30", "ts_range_30_gene", \
+				"ts_range_30_list"]
 		
 		if genes is None:
 			columns = columns[:5]
@@ -311,6 +318,8 @@ def worker(bedpe_filename, bed_filenames):
 		for i in columns:
 			if "score" == i:
 				result_file[i] = 0.0
+			elif i.endswith("list"):
+				result_file[i] = ""
 			else:
 				result_file[i] = 0
 	
