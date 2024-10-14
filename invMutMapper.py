@@ -181,8 +181,8 @@ def counter(array, initials, scores, onco_interval_id, ts_interval_id):
 		if onco_interval_id == None:
 			return [0, 0, 0, 0, 0.0]
 		else:
-			return [0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0, 0, \
-					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			return [0, 0, 0, 0, 0.0, 0, 0, "", 0, 0, "", \
+					0, 0, "", 0, 0, "", 0, 0, "", 0, 0, "", 0, 0, "", 0, 0, ""]
 	
 	# assing initial interval to visited intervals
 	visited_intervals = set( initials )
