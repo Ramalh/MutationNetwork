@@ -299,7 +299,7 @@ def worker(bedpe_filename, bed_filenames):
 		n = 0
 		bed_chromosomes = bed_file.loc[:, "chr"].values
 		
-		result_file = bed_file.loc[:, ["chr", "start", "end", "start_hg19", "driver"]].copy()
+		result_file = bed_file.copy()
 		columns =["intervals", "interactions", "overlaps", \
 				"cycles", "score", "onco_range_5", "onco_range_5_gene",\
 				"onco_range_5_list", "onco_range_10", "onco_range_10_gene",\
@@ -385,6 +385,8 @@ def main():
 			required = True)
 	parser.add_argument("-r", "--remove_pickles", action="store_true",\
 			help="If True, .pickle files will be removed after calulation finished")
+	parser.add_argument("-s", "--serial", action="store_true",\
+			help="If True, code will be run in serial")
 	
 	args = parser.parse_args()
 	
@@ -394,7 +396,11 @@ def main():
 	print(args.debug)
 	print("only-write mode:", end=" ")
 	print(args.only_write)
-	
+	print("mode:", end=" ")
+	if args.serial:
+		print("serial")
+	else:
+		print("parallel")
 	global output_dir, only_write, verbose, genes, metadata
 	genes = read_driver_genes(args.drivergenes)
 	metadata = pd.read_csv(args.metadata, sep="\t")
@@ -415,17 +421,18 @@ def main():
 	if not os.path.isdir(tmp_dir):
 		os.makedirs(tmp_dir)
 	
-	for bedpe_file_name in args.bedpe_files:
-		worker(bedpe_file_name, args.bed_files)
+	if args.serial:
+		for bedpe_file_name in args.bedpe_files:
+			worker(bedpe_file_name, args.bed_files)
+	else:
+		pool = Pool(processes=os.cpu_count())
+		jobs = []
+		for bedpe_file_name in args.bedpe_files:
+			jobs.append(pool.apply_async(worker, \
+					args = (bedpe_file_name, args.bed_files)))
+		pool.close()
+		pool.join()
 	
-	#pool = Pool(processes=os.cpu_count())
-	#jobs = []
-	#for bedpe_file_name in args.bedpe_files:
-	#	jobs.append(pool.apply_async(worker, \
-	#			args = (bedpe_file_name, args.bed_files)))
-	#pool.close()
-	#pool.join()
-
 	if args.remove_pickles:
 		for i in os.listdir(tmp_dir):
 			os.remove(os.path.join(tmp_dir, i))
