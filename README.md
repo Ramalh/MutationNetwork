@@ -10,7 +10,7 @@ conda create --name mutation\_network --file requirements.txt
 
 ## Usage
 
-usage: python invMutMapper.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-dg [DRIVERGENES]] -md METADATA
+usage: python invMutMapper.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA
 
 Example: python InvMutMapper.py --bedpe\_files bedpe/\*.bedpe.gz --bed\_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v
 
@@ -52,5 +52,5 @@ onco/ts\_range\_X - number of intervals that has overlap with given onco/ts gene
 
 onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from the mutation in the graph
 
-onco/ts\_range\_X\_lis - name of genes that has shortes path lenght of X from the mutation in the graph
+onco/ts\_range\_X\_list - name of genes that has shortes path lenght of X from the mutation in the graph
 
