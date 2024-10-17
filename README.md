@@ -6,7 +6,7 @@ Script can be install via github directly with example input data.
 
 ### conda env
 
-conda create --name mutation\_network --file requirements.txt
+conda env create -f requirements.txt
 
 ## Usage
 
