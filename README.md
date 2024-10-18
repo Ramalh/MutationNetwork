@@ -6,7 +6,9 @@ Script can be install via github directly with example input data.
 
 ### conda env
 
-conda env create -f requirements.txt
+conda create --name mutation\_network python=3.10
+conda install --name mutation\_network --file requirements
+conda activate mutation\_network
 
 ## Usage
 
