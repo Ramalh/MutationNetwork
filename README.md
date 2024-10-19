@@ -8,7 +8,7 @@ Script can be install via github directly with example input data.
 
 conda create --name mutation\_network python=3.10
 
-conda install --name mutation\_network --file requirements
+conda install --name mutation\_network --file requirements.txt
 
 conda activate mutation\_network
 
