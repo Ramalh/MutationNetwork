@@ -151,45 +151,38 @@ def read_driver_genes(filename):
 	if filename == None:
 		return None
 	
-	genes = pd.read_csv(filename,
-		dtype = {0: object, 1: int, 2: object, 3: object, 4: int, 5: int})
-	#genes.chromosome = "chr" + genes.chromosome
-	genes.chromosome = genes.chromosome.str.replace("chr", "")
-	genes_array = genes.iloc[:,[0, 2, 3, 4, 5]].values
+	genes = pd.read_csv(filename)
+	genes.Chromosome = genes.Chromosome.str.replace("chr", "")
 	
-	return genes_array
+	return genes
 
 
-def find_driver_overlaps(genes, intervals):
+def find_driver_overlaps(genes, common_chromosome, intervals):
 	
-	onco_interval_id = dict()
-	ts_interval_id = dict()
-	for i in genes[genes[:,0] == "oncogene", :]:
-		for j in intervals[ ((i[3] < intervals[:, 0]) & (intervals[:, 0] < i[4])) \
-				| ((i[3] < intervals[:, 1]) & (intervals[:, 1] < i[4])) ]:
-			onco_interval_id[j[2]] = i[1]
-	
-	for i in genes[genes[:,0] == "tumorSuppressor", :]:
-		for j in intervals[ ((i[3] < intervals[:, 0]) & (intervals[:, 0] < i[4])) \
-				| ((i[3] < intervals[:, 1]) & (intervals[:, 1] < i[4])) ]:
-			ts_interval_id[j[2]] = i[1]
-	
-	return onco_interval_id, ts_interval_id
+	f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
+	gene_interval = {}
+	for geneType in genes.gene_type.unique():
+		gene_interval[geneType] = {}
+	for geneType in f_genes.gene_type.unique():
+		for index, row in f_genes.loc[f_genes.gene_type == geneType, :].iterrows():
+			for interval in intervals[\
+					((intervals[:, 0] > row["Start"]) & \
+						(intervals[:, 0] < row["End"])) |\
+					((intervals[:, 1] > row["Start"]) &\
+						(intervals[:, 1] < row["End"])) ]:
+				gene_interval[geneType][interval[2]] = row["gene_name"]
+	return gene_interval
 
 
-def counter(array, initials, scores, onco_interval_id, ts_interval_id):
+def counter(array, initials, scores, gene_interval):
 	# if initials set is empty, there is no overlap at all
 	if len(initials) == 0:
-		if onco_interval_id == None:
-			return [0, 0, 0, 0, 0.0]
-		else:
-			return [0, 0, 0, 0, 0.0, 0, 0, "", 0, 0, "", \
-					0, 0, "", 0, 0, "", 0, 0, "", 0, 0, "", 0, 0, "", 0, 0, ""]
+		return None
 	
 	# assing initial interval to visited intervals
 	visited_intervals = set( initials )
 	indices = set( [ -1 * i for i in visited_intervals ] )
-
+	
 	G= nx.Graph()
 	for i in initials:
 		G.add_edge( i, -i )
@@ -224,69 +217,52 @@ def counter(array, initials, scores, onco_interval_id, ts_interval_id):
 		if i > 0:
 			score_counter += scores[i-1]
 	
-	if onco_interval_id == None:
-		return [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
+	result = [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
 				cycle_counter, round(score_counter/interaction_counter,2)]
-	else:		
+	
+	if gene_interval == None:
+		return 	result
+	else:
 		paths = nx.single_source_dijkstra_path_length(G, 0, cutoff=30)
-		onco_inv_5 = 0
-		onco_inv_10 = 0
-		onco_inv_20 = 0
-		onco_inv_30 = len(paths.keys() & onco_interval_id.keys())
-		onco_5_set = set()
-		onco_10_set = set()
-		onco_20_set = set()
-		onco_30_set = set()
-		for i in paths.keys() & onco_interval_id.keys():
-			if paths[i] <= 5:
-				onco_inv_5 += 1
-				onco_5_set.add(onco_interval_id[i])
-			if paths[i] <= 10:
-				onco_inv_10 += 1
-				onco_10_set.add(onco_interval_id[i])
-			if paths[i] <= 20:
-				onco_inv_20 += 1
-				onco_20_set.add(onco_interval_id[i])
-			onco_30_set.add(onco_interval_id[i])
-		onco_gene_5 = len(onco_5_set)
-		onco_gene_10 = len(onco_10_set)
-		onco_gene_20 = len(onco_20_set)
-		onco_gene_30 = len(onco_30_set)
-		
-		ts_inv_5 = 0
-		ts_inv_10 = 0
-		ts_inv_20 = 0
-		ts_inv_30 = len(paths.keys() & onco_interval_id.keys())
-		ts_5_set = set()
-		ts_10_set = set()
-		ts_20_set = set()
-		ts_30_set = set()
-		for i in paths.keys() & ts_interval_id.keys():
-			if paths[i] <= 5:
-				ts_inv_5 += 1
-				ts_5_set.add(ts_interval_id[i])
-			if paths[i] <= 10:
-				ts_inv_10 += 1
-				ts_10_set.add(ts_interval_id[i])
-			if paths[i] <= 20:
-				ts_inv_20 += 1
-				ts_20_set.add(ts_interval_id[i])
-			ts_30_set.add(ts_interval_id[i])
-		ts_gene_5 = len(ts_5_set)
-		ts_gene_10 = len(ts_10_set)
-		ts_gene_20 = len(ts_20_set)
-		ts_gene_30 = len(ts_30_set)
-		
-		return [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
-				cycle_counter, round(score_counter/interaction_counter,2), \
-				onco_inv_5, onco_gene_5, "|".join(list(onco_5_set)), onco_inv_10, \
-				onco_gene_10, "|".join(list(onco_10_set)), onco_inv_20, onco_gene_20,\
-				"|".join(list(onco_20_set)), onco_inv_30, onco_gene_30, \
-				"|".join(list(onco_30_set)), ts_inv_5, ts_gene_5, \
-				"|".join(list(ts_5_set)), ts_inv_10, ts_gene_10, \
-				"|".join(list(ts_10_set)), ts_inv_20, ts_gene_20, \
-				"|".join(list(ts_20_set)), ts_inv_30, ts_gene_30, \
-				"|".join(list(ts_30_set))]
+		for geneType in gene_interval:
+			inv_5 = 0
+			inv_10 = 0
+			inv_20 = 0
+			inv_30 = len(paths.keys() & gene_interval[geneType].keys())
+			set_5 = set()
+			set_10 = set()
+			set_20 = set()
+			set_30 = set()
+			for i in paths.keys() & gene_interval[geneType].keys():
+				if paths[i] <= 5:
+					inv_5 += 1
+					set_5.add(gene_interval[geneType][i])
+				if paths[i] <= 10:
+					inv_10 += 1
+					set_10.add(gene_interval[geneType][i])
+				if paths[i] <= 20:
+					inv_20 += 1
+					set_20.add(gene_interval[geneType][i])
+				set_30.add(gene_interval[geneType][i])
+			gene_5 = len(set_5)
+			gene_10 = len(set_10)
+			gene_20 = len(set_20)
+			gene_30 = len(set_30)
+			result.append(inv_5)
+			result.append(gene_5)
+			result.append("|".join(list(set_5)))
+			result.append(inv_10)
+			result.append(gene_10)
+			result.append("|".join(list(set_10)))
+			result.append(inv_20)
+			result.append(gene_20)
+			result.append("|".join(list(set_20)))
+			result.append(inv_30)
+			result.append(gene_30)
+			result.append("|".join(list(set_30)))
+	
+		return result
+
 
 def worker(bedpe_filename, bed_filenames):
 	base_bedpe_name = os.path.basename(bedpe_filename).split(".")[0]
@@ -303,18 +279,14 @@ def worker(bedpe_filename, bed_filenames):
 		
 		result_file = bed_file.copy()
 		columns =["intervals", "interactions", "overlaps", \
-				"cycles", "score", "onco_range_5", "onco_range_5_gene",\
-				"onco_range_5_list", "onco_range_10", "onco_range_10_gene",\
-				"onco_range_10_list", "onco_range_20", "onco_range_20_gene",\
-				"onco_range_20_list", "onco_range_30", "onco_range_30_gene",\
-				"onco_range_30_list", "ts_range_5", "ts_range_5_gene", \
-				"ts_range_5_list", "ts_range_10", "ts_range_10_gene", \
-				"ts_range_10_list", "ts_range_20", "ts_range_20_gene",\
-				"ts_range_20_list", "ts_range_30", "ts_range_30_gene", \
-				"ts_range_30_list"]
+				"cycles", "score"]
 		
-		if genes is None:
-			columns = columns[:5]
+		if genes is not None:
+			for i in genes["gene_type"].unique():
+				for j in ["5", "10", "20", "30"]:
+					columns.append(f"{i}_range_{j}")
+					columns.append(f"{i}_range_{j}_gene")
+					columns.append(f"{i}_range_{j}_list")
 		
 		# adding columns to result file
 		for i in columns:
@@ -335,19 +307,18 @@ def worker(bedpe_filename, bed_filenames):
 				scores = pickle.load(f)
 			
 			if genes is None:
-				onco_interval_id, ts_interval_id = None, None
+				gene_interval = None
 			else:
-				filtered_genes = genes[genes[:, 2] == common_chromosome, :]
-				onco_interval_id, ts_interval_id = find_driver_overlaps(filtered_genes, intervals)
+				gene_interval = \
+						find_driver_overlaps(genes, common_chromosome, intervals)
 			
 			for mutation in mutations:
 				initials = initial_intervals(intervals, mutation)
-				count_values = counter(array, initials, scores, \
-						onco_interval_id, ts_interval_id)
-				
-				result_file.loc[ (result_file.chr == common_chromosome) & \
-						(result_file.start == mutation[0]) & \
-						(result_file.end == mutation[1]), columns] = count_values
+				count_values = counter(array, initials, scores, gene_interval)
+
+				if count_values is not None:
+					result_file.loc[ (result_file.chr == common_chromosome) & \
+							(result_file.start == mutation), columns] = count_values
 				
 				if verbose:
 					t2 = time.time()
