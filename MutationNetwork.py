@@ -312,8 +312,7 @@ def worker(bedpe_filename, bed_filenames):
 			
 			for mutation in mutations:
 				initials = initial_intervals(intervals, mutation)
-				count_values = counter(array, initials, scores, \
-						gene_interval)
+				count_values = counter(array, initials, scores, gene_interval)
 
 				if count_values is not None:
 					result_file.loc[ (result_file.chr == common_chromosome) & \
