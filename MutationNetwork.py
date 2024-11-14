@@ -298,7 +298,7 @@ def worker(bedpe_filename, bed_filenames):
 				result_file[i] = 0
 	
 		for common_chromosome in np.intersect1d(bed_chromosomes, bedpe_chromosomes):
-			mutations = bed_file.loc[ bed_file.chr == common_chromosome , ["start", "end"]].values
+			mutations = bed_file.loc[ bed_file.chr == common_chromosome , ["start", "end"]]
 			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_intervals.pickle", "rb") as f:
 				intervals = pickle.load(f)
 			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_array.pickle", "rb") as f:
