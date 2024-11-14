@@ -137,10 +137,10 @@ def read_bed(bed_filename):
 def initial_intervals(sorted_intervals, mutation):
 	mutants = set()
 	
-	for i in sorted_intervals[ ((sorted_intervals[:, 1] > mutation[0]) \
-			& ( sorted_intervals[:, 0] <= mutation[0])) |
-			( (sorted_intervals[:, 1] > mutation[1]) \
-			& ( sorted_intervals[:, 0] <= mutation[1]) ) ]:
+	for i in sorted_intervals[(( sorted_intervals[:, 1] > mutation["start"]) \
+			& ( sorted_intervals[:, 0] <= mutation["start"]) \
+			| (( sorted_intervals[:, 1] > mutation["end"]) \
+			& ( sorted_intervals[:, 0] <= mutation["end"]) ))]:
 		mutants.add(i[2])
 	
 	return mutants
@@ -312,13 +312,12 @@ def worker(bedpe_filename, bed_filenames):
 				gene_interval = \
 						find_driver_overlaps(genes, common_chromosome, intervals)
 			
-			for mutation in mutations:
+			for index, mutation in mutations.iterrows():
 				initials = initial_intervals(intervals, mutation)
 				count_values = counter(array, initials, scores, gene_interval)
-
 				if count_values is not None:
 					result_file.loc[ (result_file.chr == common_chromosome) & \
-							(result_file.start == mutation), columns] = count_values
+							(result_file.start == mutation.start), columns] = count_values
 				
 				if verbose:
 					t2 = time.time()
