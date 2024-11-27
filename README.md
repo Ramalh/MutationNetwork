@@ -26,7 +26,7 @@ conda activate mutation_network
 
 ## Usage
 
-usage: python MutationNetwork.py [-h] --bed_files BED_FILES [BED_FILES ...] [-o [OUTPUT]] --bedpe_files BEDPE_FILES [BEDPE_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA
+usage: python MutationNetwork.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA
 
 example: 
 
@@ -36,11 +36,11 @@ python MutationNetwork.py --bedpe_files bedpe/*.bedpe.gz --bed_files mutations.c
 
 ## Input Files
 
-bedpe_files --
+bedpe\_files --
 
-bed_file --
+bed\_file --
 
-driver_genes --
+driver\_genes --
 
 metadata --
 
@@ -70,25 +70,25 @@ cycles - cycles rank of the graph which is created by intervals that the given m
 
 score - average score of the interactions between intervals that the given mutation affects directly or indirectly
 
-onco/ts_range_X - number of intervals that has overlap with given onco/ts genes within X range
+onco/ts\_range\_X - number of intervals that has overlap with given onco/ts genes within X range
 
-onco/ts_range_X_gene - number of genes that has shortes path lenght of X from the mutation in the graph
+onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from the mutation in the graph
 
-onco/ts_range_X_list - name of genes that has shortes path lenght of X from the mutation in the graph
+onco/ts\_range\_X\_list - name of genes that has shortes path lenght of X from the mutation in the graph
 
-# merge_genes.py
+# MergeGenes.py
 
-usage: get_drivers.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
+usage: MergeGenes.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
 
 example: 
 
 ```
-python get_drivers.py -names hugo_symbols.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
+python MergeGenes.py -names hugo_symbols.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
 ```
 
 ## Input Files
 
-names (hugo_symbols) -- at least one column csv file that contains hugo symbol of genes (Columns should be called "Hugo Symbols").
+names (hugo\_symbols) -- at least one column csv file that contains hugo symbol of genes (Columns should be called "Hugo Symbols").
 
 type (oncogenes) -- an arbitrary gene type
 
