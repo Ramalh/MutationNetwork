@@ -1,4 +1,4 @@
-# invMutMapper.py -- Interval Mutation Mapper
+# MutationNetwork.py
 
 ## Installation
 
@@ -6,25 +6,41 @@ Script can be install via github directly with example input data.
 
 ### conda env
 
-conda create --name mutation\_network python=3.10
+Before creating conda env, some channels should be added. ***It is going to change your config file!***
 
-conda install --name mutation\_network --file requirements.txt
+``` 
+conda config --add channels conda-forge
 
-conda activate mutation\_network
+conda config --add channels bioconda 
+```
+
+Now, the code above will create a conda env and install necessary packages.
+
+``` 
+conda create --name mutation_network python=3.10
+
+conda install --name mutation_network --file requirements.txt
+
+conda activate mutation_network
+```
 
 ## Usage
 
-usage: python invMutMapper.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA
+usage: python MutationNetwork.py [-h] --bed_files BED_FILES [BED_FILES ...] [-o [OUTPUT]] --bedpe_files BEDPE_FILES [BEDPE_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA
 
-Example: python InvMutMapper.py --bedpe\_files bedpe/\*.bedpe.gz --bed\_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v
+example: 
+
+```
+python MutationNetwork.py --bedpe_files bedpe/*.bedpe.gz --bed_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v
+```
 
 ## Input Files
 
-bedpe\_files -- 
+bedpe_files --
 
-bed\_file --
+bed_file --
 
-driver\_genes --
+driver_genes --
 
 metadata --
 
@@ -37,7 +53,9 @@ metadata --
 ### Step 2: flowchart
 
 <p align="center">
-  <img src="img/flowchart.png" />
+
+<img src="img/flowchart.png"/>
+
 </p>
 
 ## Result file columns
@@ -52,22 +70,26 @@ cycles - cycles rank of the graph which is created by intervals that the given m
 
 score - average score of the interactions between intervals that the given mutation affects directly or indirectly
 
-onco/ts\_range\_X - number of intervals that has overlap with given onco/ts genes within X range
+onco/ts_range_X - number of intervals that has overlap with given onco/ts genes within X range
 
-onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from the mutation in the graph
+onco/ts_range_X_gene - number of genes that has shortes path lenght of X from the mutation in the graph
 
-onco/ts\_range\_X\_list - name of genes that has shortes path lenght of X from the mutation in the graph
+onco/ts_range_X_list - name of genes that has shortes path lenght of X from the mutation in the graph
 
-# merge\_genes.py
+# merge_genes.py
 
-usage: get\_drivers.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
+usage: get_drivers.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
 
-example: python get\_drivers.py -names hugo\_symbols.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
+example: 
 
-## files
+```
+python get_drivers.py -names hugo_symbols.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
+```
 
-names (hugo\_symbols) -- at least one column csv file that contains hugo symbol of genes (Columns should be called "Hugo Symbols").
+## Input Files
+
+names (hugo_symbols) -- at least one column csv file that contains hugo symbol of genes (Columns should be called "Hugo Symbols").
 
 type (oncogenes) -- an arbitrary gene type
 
-gencode (\*.annotation.gtf.gz) -- gencode file that has been downloaded from https://www.gencodegenes.org/human/ (content: "Basic gene annotation", Regions: "CHR", Dowload: "GTF").
+gencode (\*.annotation.gtf.gz) -- gencode file that has been downloaded from <https://www.gencodegenes.org/human/> (content: "Basic gene annotation", Regions: "CHR", Dowload: "GTF").
