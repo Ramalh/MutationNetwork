@@ -58,3 +58,16 @@ onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from
 
 onco/ts\_range\_X\_list - name of genes that has shortes path lenght of X from the mutation in the graph
 
+# merge\_genes.py
+
+usage: get\_drivers.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
+
+example: python get\_drivers.py -names hugo\_symbols.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
+
+## files
+
+names (hugo\_symbols) -- at least one column csv file that contains hugo symbol of genes (Columns should be called "Hugo Symbols").
+
+type (oncogenes) -- an arbitrary gene type
+
+gencode (\*.annotation.gtf.gz) -- gencode file that has been downloaded from https://www.gencodegenes.org/human/ (content: "Basic gene annotation", Regions: "CHR", Dowload: "GTF").
