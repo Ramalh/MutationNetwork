@@ -70,11 +70,11 @@ cycles - cycles rank of the graph which is created by intervals that the given m
 
 score - average score of the interactions between intervals that the given mutation affects directly or indirectly
 
-onco/ts\_range\_X - number of intervals that has overlap with given onco/ts genes within X range
+{GeneType}\_range\_X\_NumOfInv - number of intervals that has overlap with given genes within X range
 
-onco/ts\_range\_X\_gene - number of genes that has shortes path lenght of X from the mutation in the graph
+{GeneType}\_range\_X\_NumOfGen - number of genes that has shortes path lenght of X from the mutation in the graph
 
-onco/ts\_range\_X\_list - name of genes that has shortes path lenght of X from the mutation in the graph
+{GeneType}\_range\_X\_NamOfGen - name of genes that has shortes path lenght of X from the mutation in the graph
 
 # MergeGenes.py
 

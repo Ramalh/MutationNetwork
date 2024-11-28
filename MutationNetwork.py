@@ -279,20 +279,20 @@ def worker(bedpe_filename, bed_filenames):
 		
 		result_file = bed_file.copy()
 		columns =["intervals", "interactions", "overlaps", \
-				"cycles", "score"]
+				"cycle_rank", "score"]
 		
 		if genes is not None:
 			for i in genes["gene_type"].unique():
 				for j in ["5", "10", "20", "30"]:
-					columns.append(f"{i}_range_{j}")
-					columns.append(f"{i}_range_{j}_gene")
-					columns.append(f"{i}_range_{j}_list")
+					columns.append(f"{i}_range_{j}_NumOfInv")
+					columns.append(f"{i}_range_{j}_NumOfGen")
+					columns.append(f"{i}_range_{j}_NamOfGen")
 		
 		# adding columns to result file
 		for i in columns:
 			if "score" == i:
 				result_file[i] = 0.0
-			elif i.endswith("list"):
+			elif i.endswith("NamOfGen"):
 				result_file[i] = ""
 			else:
 				result_file[i] = 0
