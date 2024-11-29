@@ -58,6 +58,12 @@ metadata --
 
 </p>
 
+### Others
+
+![image](image/how_tree_to_array_works.png)
+![image](image/multiple_interaction.drawio.png)
+![image](image/mutation_effect.png)
+
 ## Result file columns
 
 intervals - number of intervals that the given mutation affects directly or indirectly
