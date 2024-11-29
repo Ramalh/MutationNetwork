@@ -60,9 +60,11 @@ metadata --
 
 ### Others
 
-![image](image/how_tree_to_array_works.png)
-![image](image/multiple_interaction.drawio.png)
-![image](image/mutation_effect.png)
+![image](img/how_tree_to_array_works.png)
+
+![image](img/multiple_interaction.drawio.png)
+
+![image](img/mutation_effect.png)
 
 ## Result file columns
 
