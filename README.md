@@ -74,7 +74,7 @@ interactions - number of interactions between intervals that the given mutation 
 
 overlaps - number of overlaps between intervals that the given mutation affects directly or indirectly
 
-cycles - cycles rank of the graph which is created by intervals that the given mutation affects directly or indirectly
+cycle\_rank - cycles rank of the graph which is created by intervals that the given mutation affects directly or indirectly
 
 score - average score of the interactions between intervals that the given mutation affects directly or indirectly
 
