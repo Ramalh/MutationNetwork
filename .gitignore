@@ -1,0 +1,15 @@
+.pickles/*
+additional/allGenes.csv
+additional/cancerGeneList.tsv
+additional/driverGenes.csv
+additional/gencode.v46.basic.annotation.gtf.gz
+additional/gencode.v47.basic.annotation.gtf.gz
+additional/get_drivers_by_name.py
+additional/output.csv
+additional/proteinCodingGenes.csv
+additional/sample.csv
+files.txt
+result/ENCFF004MDS_CD8-positive,_alpha-beta_memory_T_cell_POLR2A.csv
+result/ENCFF008OPR_Panc1_POLR2A.csv
+result/ENCFF030PMM_K562_POLR2A.csv
+result/ENCFF038FGR_Panc1_POLR2A.csv
