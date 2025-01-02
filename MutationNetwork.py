@@ -125,13 +125,19 @@ def check_pickle_file(bedpe_file_name):
 
 
 def read_bed(bed_filename):
-	bed_file = pd.read_csv(bed_filename, delimiter=",",\
-						names = ["chr", "start", "end", "start_hg19", "driver"],\
-						header = None, dtype = \
-						{0: object, 1: int, 2: int, 3: object},\
-						skiprows=1)
-	
-	return bed_file
+	bed_file = pd.read_csv(bed_filename, delimiter=",")
+	for i in ["chr", "start", "end"]:
+		if i not in bed_file.columns:
+			print(f"{i} column is not in mutation file")
+			print(bed_file.columns)
+			sys.exit(0)
+	cols = bed_file.columns.tolist()
+	cols.remove("chr")
+	cols.remove("start")
+	cols.remove("end")
+	cols = ["chr", "start", "end"] + cols
+	bed_file = bed_file.astype({"chr": str})
+	return bed_file[cols]
 
 
 def initial_intervals(sorted_intervals, mutation):
@@ -223,43 +229,32 @@ def counter(array, initials, scores, gene_interval):
 	if gene_interval == None:
 		return 	result
 	else:
-		paths = nx.single_source_dijkstra_path_length(G, 0, cutoff=30)
+		#ranges = ["5", "10", "20", "30"]
+		#paths = nx.single_source_dijkstra_path_length(G, 0, cutoff=30)
+		paths = nx.single_source_dijkstra_path_length(G, 0, cutoff= int(ranges[-1]) )
 		for geneType in gene_interval:
-			inv_5 = 0
-			inv_10 = 0
-			inv_20 = 0
-			inv_30 = len(paths.keys() & gene_interval[geneType].keys())
-			set_5 = set()
-			set_10 = set()
-			set_20 = set()
-			set_30 = set()
+			inv_ranges = len(ranges)*[0]
+			inv_ranges[-1] = len(paths.keys() & gene_interval[geneType].keys())
+			set_ranges = len(ranges) * [None]
+			
+			for i in range(len(ranges)):
+				set_ranges[i] = set()
+			
 			for i in paths.keys() & gene_interval[geneType].keys():
-				if paths[i] <= 5:
-					inv_5 += 1
-					set_5.add(gene_interval[geneType][i])
-				if paths[i] <= 10:
-					inv_10 += 1
-					set_10.add(gene_interval[geneType][i])
-				if paths[i] <= 20:
-					inv_20 += 1
-					set_20.add(gene_interval[geneType][i])
-				set_30.add(gene_interval[geneType][i])
-			gene_5 = len(set_5)
-			gene_10 = len(set_10)
-			gene_20 = len(set_20)
-			gene_30 = len(set_30)
-			result.append(inv_5)
-			result.append(gene_5)
-			result.append("|".join(list(set_5)))
-			result.append(inv_10)
-			result.append(gene_10)
-			result.append("|".join(list(set_10)))
-			result.append(inv_20)
-			result.append(gene_20)
-			result.append("|".join(list(set_20)))
-			result.append(inv_30)
-			result.append(gene_30)
-			result.append("|".join(list(set_30)))
+				for j in range(len(ranges)-1):
+					if paths[i] <= int(ranges[j]):
+						inv_ranges[j] += 1
+						set_ranges[j].add(gene_interval[geneType][i])
+				set_ranges[-1].add(gene_interval[geneType][i])
+			gene_ranges = len(ranges) * [0]
+			
+			for i in range(len(ranges)):
+				gene_ranges[i] = len(set_ranges[i])
+			
+			for i in range(len(ranges)):
+				result.append(inv_ranges[i])
+				result.append(gene_ranges[i])
+				result.append("|".join(list(set_ranges[i])))
 	
 		return result
 
@@ -281,9 +276,10 @@ def worker(bedpe_filename, bed_filenames):
 		columns =["intervals", "interactions", "overlaps", \
 				"cycle_rank", "score"]
 		
+		#ranges = ["5", "10", "20", "30"]
 		if genes is not None:
 			for i in genes["gene_type"].unique():
-				for j in ["5", "10", "20", "30"]:
+				for j in ranges:
 					columns.append(f"{i}_range_{j}_NumOfInv")
 					columns.append(f"{i}_range_{j}_NumOfGen")
 					columns.append(f"{i}_range_{j}_NamOfGen")
@@ -296,7 +292,6 @@ def worker(bedpe_filename, bed_filenames):
 				result_file[i] = ""
 			else:
 				result_file[i] = 0
-	
 		for common_chromosome in np.intersect1d(bed_chromosomes, bedpe_chromosomes):
 			mutations = bed_file.loc[ bed_file.chr == common_chromosome , ["start", "end"]]
 			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_intervals.pickle", "rb") as f:
@@ -360,6 +355,9 @@ def main():
 			help="If True, .pickle files will be removed after calulation finished")
 	parser.add_argument("-s", "--serial", action="store_true",\
 			help="If True, code will be run in serial")
+	parser.add_argument("--ranges", \
+			help="custom ranges (shortest path from mutation) should be greater than 0 integers",\
+			default = "5 10 20 30")
 	
 	args = parser.parse_args()
 	
@@ -374,7 +372,7 @@ def main():
 		print("serial")
 	else:
 		print("parallel")
-	global output_dir, only_write, verbose, genes, metadata
+	global output_dir, only_write, verbose, genes, metadata, ranges
 	genes = read_driver_genes(args.drivergenes)
 	metadata = pd.read_csv(args.metadata, sep="\t")
 	metadata = metadata.loc[:, ["File accession", "Biosample term name", "Experiment target"]]
@@ -384,6 +382,14 @@ def main():
 	
 	only_write = args.only_write
 	verbose = args.verbose
+	
+	###
+	ranges = sorted(list(map(int, args.ranges.split(" "))))
+	if ranges[0] < 1:
+		print("ranges contains value less than 1")
+		sys.exit(0)
+	###
+	ranges = list(map(str, ranges))
 	
 	# create output directory
 	current_dir = os.path.abspath(os.getcwd())
