@@ -163,24 +163,29 @@ def read_driver_genes(filename):
 	return genes
 
 
-def find_driver_overlaps(genes, common_chromosome, intervals):
+def find_driver_overlaps(genes, intervals):
 	
-	f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
 	gene_interval = {}
 	for geneType in genes.gene_type.unique():
 		gene_interval[geneType] = {}
-	for geneType in f_genes.gene_type.unique():
-		for index, row in f_genes.loc[f_genes.gene_type == geneType, :].iterrows():
+	
+	for geneType in genes.gene_type.unique():
+		for index, row in genes.loc[genes.gene_type == geneType, :].iterrows():
 			for interval in intervals[\
 					((intervals[:, 0] > row["Start"]) & \
 						(intervals[:, 0] < row["End"])) |\
 					((intervals[:, 1] > row["Start"]) &\
 						(intervals[:, 1] < row["End"])) ]:
-				gene_interval[geneType][interval[2]] = row["gene_name"]
+				
+				if interval[2] in gene_interval[geneType]:
+					gene_interval[geneType][interval[2]].append( row["gene_name"] )
+				else:
+					gene_interval[geneType][interval[2]] = [ row["gene_name"] ]
+					
 	return gene_interval
 
 
-def counter(array, initials, scores, gene_interval):
+def counter(array, initials, scores, gene_interval, genes, mutation):
 	# if initials set is empty, there is no overlap at all
 	if len(initials) == 0:
 		return None
@@ -226,11 +231,19 @@ def counter(array, initials, scores, gene_interval):
 	result = [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
 				cycle_counter, round(score_counter/interaction_counter,2)]
 	
-	if gene_interval == None:
+	if type(gene_interval) == None:
 		return 	result
-	else:
-		#ranges = ["5", "10", "20", "30"]
-		#paths = nx.single_source_dijkstra_path_length(G, 0, cutoff=30)
+	else:	
+		for ind, mut in genes.loc[ ( (genes.Start <= mutation["start"]) &\
+				(genes.End >= mutation["start"]) ) |\
+				( (genes.Start <= mutation["end"]) &\
+				(genes.End >= mutation["end"]) ),:].iterrows():
+			#gene_interval[ mut["gene_type"] ][0] = mut["gene_name"]
+			if 0 in gene_interval[ mut["gene_type"] ]:
+				gene_interval[ mut["gene_type"] ][0].append( mut["gene_name"] )
+			else:
+				gene_interval[ mut["gene_type"] ][0] = [ mut["gene_name"] ]
+	
 		paths = nx.single_source_dijkstra_path_length(G, 0, cutoff= int(ranges[-1]) )
 		for geneType in gene_interval:
 			inv_ranges = len(ranges)*[0]
@@ -240,12 +253,12 @@ def counter(array, initials, scores, gene_interval):
 			for i in range(len(ranges)):
 				set_ranges[i] = set()
 			
-			for i in paths.keys() & gene_interval[geneType].keys():
+			for  i in paths.keys() & gene_interval[geneType].keys():
 				for j in range(len(ranges)-1):
 					if paths[i] <= int(ranges[j]):
 						inv_ranges[j] += 1
-						set_ranges[j].add(gene_interval[geneType][i])
-				set_ranges[-1].add(gene_interval[geneType][i])
+						set_ranges[j] = set_ranges[j] | set(gene_interval[geneType][i])
+				set_ranges[-1] = set_ranges[-1] | set(gene_interval[geneType][i])
 			gene_ranges = len(ranges) * [0]
 			
 			for i in range(len(ranges)):
@@ -255,7 +268,6 @@ def counter(array, initials, scores, gene_interval):
 				result.append(inv_ranges[i])
 				result.append(gene_ranges[i])
 				result.append("|".join(list(set_ranges[i])))
-	
 		return result
 
 
@@ -304,12 +316,14 @@ def worker(bedpe_filename, bed_filenames):
 			if genes is None:
 				gene_interval = None
 			else:
+				f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
 				gene_interval = \
-						find_driver_overlaps(genes, common_chromosome, intervals)
+						find_driver_overlaps(f_genes, intervals)
 			
 			for index, mutation in mutations.iterrows():
 				initials = initial_intervals(intervals, mutation)
-				count_values = counter(array, initials, scores, gene_interval)
+				count_values = counter(array, initials, scores,\
+						gene_interval, genes, mutation)
 				if count_values is not None:
 					result_file.loc[ (result_file.chr == common_chromosome) & \
 							(result_file.start == mutation.start), columns] = count_values
@@ -357,7 +371,7 @@ def main():
 			help="If True, code will be run in serial")
 	parser.add_argument("--ranges", \
 			help="custom ranges (shortest path from mutation) should be greater than 0 integers",\
-			default = "5 10 20 30")
+			nargs="+", default = ["0", "5", "10"])
 	
 	args = parser.parse_args()
 	
@@ -384,10 +398,13 @@ def main():
 	verbose = args.verbose
 	
 	###
-	ranges = sorted(list(map(int, args.ranges.split(" "))))
-	if ranges[0] < 1:
-		print("ranges contains value less than 1")
-		sys.exit(0)
+	for i in args.ranges:
+		if (not i.isnumeric()):
+			print("not numeric or less than 0 or not an integer")
+			sys.exit()
+	ranges = sorted(list(set(map(int, args.ranges))))
+	print(ranges)
+	sys.exit(0)
 	###
 	ranges = list(map(str, ranges))
 	
