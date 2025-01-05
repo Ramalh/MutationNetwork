@@ -397,15 +397,11 @@ def main():
 	only_write = args.only_write
 	verbose = args.verbose
 	
-	###
 	for i in args.ranges:
 		if (not i.isnumeric()):
 			print("not numeric or less than 0 or not an integer")
 			sys.exit()
 	ranges = sorted(list(set(map(int, args.ranges))))
-	print(ranges)
-	sys.exit(0)
-	###
 	ranges = list(map(str, ranges))
 	
 	# create output directory
