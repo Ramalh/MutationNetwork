@@ -26,14 +26,13 @@ conda activate mutation_network
 
 ## Usage
 
-usage: python MutationNetwork.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA
+usage: python MutationNetwork.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA [-r] [-s] [--ranges RANGES [RANGES ...]]
 
 example: 
 
 ```
-python MutationNetwork.py --bedpe_files bedpe/*.bedpe.gz --bed_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v
+python MutationNetwork.py --bedpe_files bedpe/*.bedpe.gz --bed_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v --ranges 0 10 20
 ```
-
 ## Input Files
 
 bedpe\_files --
