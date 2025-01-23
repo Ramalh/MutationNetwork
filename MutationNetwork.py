@@ -233,42 +233,45 @@ def counter(array, initials, scores, gene_interval, genes, mutation):
 	
 	if type(gene_interval) == None:
 		return 	result
-	else:	
-		for ind, mut in genes.loc[ ( (genes.Start <= mutation["start"]) &\
-				(genes.End >= mutation["start"]) ) |\
-				( (genes.Start <= mutation["end"]) &\
-				(genes.End >= mutation["end"]) ),:].iterrows():
-			#gene_interval[ mut["gene_type"] ][0] = mut["gene_name"]
-			if 0 in gene_interval[ mut["gene_type"] ]:
-				gene_interval[ mut["gene_type"] ][0].append( mut["gene_name"] )
-			else:
-				gene_interval[ mut["gene_type"] ][0] = [ mut["gene_name"] ]
 	
-		paths = nx.single_source_dijkstra_path_length(G, 0, cutoff= int(ranges[-1]) )
-		for geneType in gene_interval:
-			inv_ranges = len(ranges)*[0]
-			inv_ranges[-1] = len(paths.keys() & gene_interval[geneType].keys())
-			set_ranges = len(ranges) * [None]
-			
-			for i in range(len(ranges)):
-				set_ranges[i] = set()
-			
-			for  i in paths.keys() & gene_interval[geneType].keys():
-				for j in range(len(ranges)-1):
-					if paths[i] <= int(ranges[j]):
-						inv_ranges[j] += 1
-						set_ranges[j] = set_ranges[j] | set(gene_interval[geneType][i])
-				set_ranges[-1] = set_ranges[-1] | set(gene_interval[geneType][i])
-			gene_ranges = len(ranges) * [0]
-			
-			for i in range(len(ranges)):
-				gene_ranges[i] = len(set_ranges[i])
-			
-			for i in range(len(ranges)):
-				result.append(inv_ranges[i])
-				result.append(gene_ranges[i])
-				result.append("|".join(list(set_ranges[i])))
-		return result
+	for ind, mut in genes.loc[ ( (genes.Start <= mutation["start"]) &\
+			(genes.End >= mutation["start"]) ) |\
+			( (genes.Start <= mutation["end"]) &\
+			(genes.End >= mutation["end"]) ),:].iterrows():
+		#gene_interval[ mut["gene_type"] ][0] = mut["gene_name"]
+		if 0 in gene_interval[ mut["gene_type"] ]:
+			gene_interval[ mut["gene_type"] ][0].append( mut["gene_name"] )
+		else:
+			gene_interval[ mut["gene_type"] ][0] = [ mut["gene_name"] ]
+	
+	paths = nx.single_source_dijkstra_path_length(G, 0, cutoff= int(ranges[-1]) )
+	for geneType in gene_interval:
+		inv_ranges = len(ranges)*[0]
+		inv_ranges[-1] = len(paths.keys() & gene_interval[geneType].keys())
+		set_ranges = len(ranges) * [None]
+		
+		for i in range(len(ranges)):
+			set_ranges[i] = set()
+		
+		for  i in paths.keys() & gene_interval[geneType].keys():
+			for j in range(len(ranges)-1):
+				if paths[i] <= int(ranges[j]):
+					inv_ranges[j] += 1
+					set_ranges[j] = set_ranges[j] | set(gene_interval[geneType][i])
+			set_ranges[-1] = set_ranges[-1] | set(gene_interval[geneType][i])
+		gene_ranges = len(ranges) * [0]
+		
+		for i in range(len(ranges)):
+			gene_ranges[i] = len(set_ranges[i])
+		
+		for i in range(len(ranges)):
+			result.append(inv_ranges[i])
+			result.append(gene_ranges[i])
+			result.append("|".join(list(set_ranges[i])))
+		
+		#if 0 in gene_interval[geneType]:
+		gene_interval[geneType].pop(0, None)
+	return result
 
 
 def worker(bedpe_filename, bed_filenames):
