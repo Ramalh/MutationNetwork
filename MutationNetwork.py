@@ -323,7 +323,7 @@ def worker(bedpe_filename, bed_filenames):
 			for index, mutation in mutations.iterrows():
 				initials = initial_intervals(intervals, mutation)
 				count_values = counter(array, initials, scores,\
-						gene_interval, genes, mutation)
+						gene_interval, f_genes, mutation)
 				if count_values is not None:
 					result_file.loc[ (result_file.chr == common_chromosome) & \
 							(result_file.start == mutation.start), columns] = count_values
