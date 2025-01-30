@@ -90,7 +90,7 @@ usage: MergeGenes.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
 example: 
 
 ```
-python MergeGenes.py -names hugo_symbols.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
+python MergeGenes.py -names gene_name_sample.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
 ```
 
 ## Input Files
@@ -100,3 +100,15 @@ names (hugo\_symbols) -- at least one column csv file that contains hugo symbol 
 type (oncogenes) -- an arbitrary gene type
 
 gencode (\*.annotation.gtf.gz) -- gencode file that has been downloaded from <https://www.gencodegenes.org/human/> (content: "Basic gene annotation", Regions: "CHR", Dowload: "GTF").
+
+# filter\_genes.py
+
+usage: python filter\_genes.py GENE\_TYPE1 GENE\_TYPE2
+
+example: 
+
+```
+python filter_genes.py lncRNA snRNA
+```
+
+Gene types should be from genecode\_statistics.csv
