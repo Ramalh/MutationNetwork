@@ -231,7 +231,7 @@ def counter(array, initials, scores, gene_interval, genes, mutation):
 	result = [ G.number_of_nodes() - 1, interaction_counter, overlap_counter, \
 				cycle_counter, round(score_counter/interaction_counter,2)]
 	
-	if type(gene_interval) == None:
+	if gene_interval == None:
 		return 	result
 	
 	for ind, mut in genes.loc[ ( (genes.Start <= mutation["start"]) &\
@@ -317,6 +317,7 @@ def worker(bedpe_filename, bed_filenames):
 				scores = pickle.load(f)
 			
 			if genes is None:
+				f_genes = None
 				gene_interval = None
 			else:
 				f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
