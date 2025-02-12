@@ -342,11 +342,11 @@ def worker(bedpe_filename, bed_filenames):
 		t2 = time.time()
 		biosample = metadata.loc[base_bedpe_name, "Biosample term name"]
 		target = metadata.loc[base_bedpe_name, "Experiment target"]
-		result_file.to_csv(f"{output_dir}/{base_bedpe_name}_{biosample}_{target}.csv",\
+		result_file.to_csv(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv",\
 				index=False)
 		if verbose:
-			print(f"{output_dir}/{base_bedpe_name}_{biosample}_{target}.csv has been written")
-			print(f"{output_dir}/{base_bedpe_name}_{biosample}_{target}.csv took {t2-t1} second(s)")
+			print(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv has been written")
+			print(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv took {t2-t1} second(s)")
 			
 	return 0
 
