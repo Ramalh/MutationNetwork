@@ -112,3 +112,26 @@ python filter_genes.py lncRNA snRNA
 ```
 
 Gene types should be from genecode\_statistics.csv
+
+# jaccard\_index\_plot.py
+
+usage: python jaccard\_index\_plot.py FILENAME
+
+Input file should be the output of MutationNetwork.py and should have only one type of gene such as protein-coding genes.
+
+example:
+```
+python jaccard\_index\_plot.py result/ENCFF004MDS_sample-1.csv
+```
+
+# gene\_similarity\_matrix.py
+
+usage: python gene\_similarity\_matrix.py FILENAME [FILENAME]
+
+Input file should be the output of MutationNetwork.py and should have only one type of gene such as protein-coding genes.
+More than one file can be used.
+
+example:
+```
+python gene\_similarity\_matrix.py result/ENCFF004MDS_sample-*
+```
