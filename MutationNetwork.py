@@ -125,8 +125,8 @@ def check_pickle_file(bedpe_file_name):
 
 
 def read_bed(bed_filename):
-	bed_file = pd.read_csv(bed_filename, delimiter=",")
-	for i in ["chr", "start", "end"]:
+	bed_file = pd.read_csv(bed_filename) #change here
+	for i in ["chr", "start", "end"]: #change here
 		if i not in bed_file.columns:
 			print(f"{i} column is not in mutation file")
 			print(bed_file.columns)
@@ -351,6 +351,85 @@ def worker(bedpe_filename, bed_filenames):
 	return 0
 
 
+###
+def worker_mutation_parallel(bedpe_filenames, bed_filename):
+	base_bed_name = os.path.basename(bed_filename).split(".")[0]
+	bed_file = read_bed(bed_filename)
+	bed_chromosomes = bed_file.loc[:, "chr"].values
+	
+	for bedpe_filename in bedpe_filenames:
+		t1 = time.time()
+		base_bedpe_name = os.path.basename(bedpe_filename).split(".")[0]
+		bedpe_chromosomes = check_pickle_file(bedpe_filename)
+		
+		result_file = bed_file.copy()
+		columns =["intervals", "interactions", "overlaps", \
+				"cycle_rank", "score"]
+		
+		#ranges = ["5", "10", "20", "30"]
+		if genes is not None:
+			for i in genes["gene_type"].unique():
+				for j in ranges:
+					columns.append(f"{i}_range_{j}_NumOfInv")
+					columns.append(f"{i}_range_{j}_NumOfGen")
+					columns.append(f"{i}_range_{j}_NamOfGen")
+		
+		# adding columns to result file
+		for i in columns:
+			if "score" == i:
+				result_file[i] = 0.0
+			elif i.endswith("NamOfGen"):
+				result_file[i] = ""
+			else:
+				result_file[i] = 0
+	
+		for common_chromosome in np.intersect1d(bed_chromosomes, bedpe_chromosomes):
+			mutations = bed_file.loc[ bed_file.chr == common_chromosome , ["start", "end"]]
+			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_intervals.pickle", "rb") as f:
+				intervals = pickle.load(f)
+			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_array.pickle", "rb") as f:
+				array = pickle.load(f)
+			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_scores.pickle", "rb") as f:
+				scores = pickle.load(f)
+			
+			if genes is None:
+				f_genes = None
+				gene_interval = None
+			else:
+				f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
+				gene_interval = \
+						find_driver_overlaps(f_genes, intervals)
+			
+			for index, mutation in mutations.iterrows():
+				initials = initial_intervals(intervals, mutation)
+				count_values = counter(array, initials, scores,\
+						gene_interval, f_genes, mutation)
+				if count_values is not None:
+					result_file.loc[ (result_file.chr == common_chromosome) & \
+							(result_file.start == mutation.start), columns] = count_values
+				
+				if verbose:
+					t2 = time.time()
+					#print(f"for {base_bedpe_name}_{base_bed_name}_result.csv:", end=" ")
+					#sys.stdout.write(f"{n}/{total_mutation}, time: {round(t2-t1, 2)} seconds\r")
+					#sys.stdout.flush()
+					#n += 1
+		
+		t2 = time.time()
+		biosample = metadata.loc[base_bedpe_name, "Biosample term name"]
+		target = metadata.loc[base_bedpe_name, "Experiment target"]
+		result_file.to_csv(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv",\
+				index=False)
+		if verbose:
+			#print(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv has been written")
+			print(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv took {t2-t1} second(s)")
+			
+	return 0
+
+	
+###
+
+
 def main():
 	parser = argparse.ArgumentParser(description="InvMutMapper.py script")
 	
@@ -376,6 +455,8 @@ def main():
 	parser.add_argument("--ranges", \
 			help="custom ranges (shortest path from mutation) should be greater than 0 integers",\
 			nargs="+", default = ["0", "5", "10"])
+	parser.add_argument("-pb", "--parallel-bedpe", help="set parallel mode \
+			for bedpe files (defaul is mutation file)", action="store_true")
 	
 	args = parser.parse_args()
 	
@@ -417,17 +498,35 @@ def main():
 	if not os.path.isdir(tmp_dir):
 		os.makedirs(tmp_dir)
 	
-	if args.serial:
-		for bedpe_file_name in args.bedpe_files:
-			worker(bedpe_file_name, args.bed_files)
+	if args.parallel_bedpe:
+	
+		if args.serial:
+			for bedpe_file_name in args.bedpe_files:
+				worker(bedpe_file_name, args.bed_files)
+		else:
+			pool = Pool(processes=os.cpu_count())
+			jobs = []
+			for bedpe_file_name in args.bedpe_files:
+				jobs.append(pool.apply_async(worker, \
+						args = (bedpe_file_name, args.bed_files)))
+			pool.close()
+			pool.join()
+			
 	else:
-		pool = Pool(processes=os.cpu_count())
-		jobs = []
-		for bedpe_file_name in args.bedpe_files:
-			jobs.append(pool.apply_async(worker, \
-					args = (bedpe_file_name, args.bed_files)))
-		pool.close()
-		pool.join()
+		if args.serial:
+			for bed_file in args.bed_files:
+				worker_mutation_parallel(args.bedpe_files, bed_file)
+		else:
+			pool = Pool(processes=os.cpu_count())
+			print(f"Number of Cores: {os.cpu_count()}")
+			jobs = []
+			for bed_file in args.bed_files:
+				jobs.append(pool.apply_async(worker_mutation_parallel, \
+						args = (args.bedpe_files, bed_file)))
+			pool.close()
+			pool.join()
+
+			
 	
 	if args.remove_pickles:
 		for i in os.listdir(tmp_dir):
