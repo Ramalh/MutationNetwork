@@ -130,7 +130,6 @@ def read_bed(bed_filename):
 		if i not in bed_file.columns:
 			print(f"{i} column is not in mutation file")
 			print(bed_file.columns)
-			sys.exit(0)
 	cols = bed_file.columns.tolist()
 	cols.remove("chr")
 	cols.remove("start")
@@ -287,17 +286,20 @@ def worker(bedpe_filename, bed_filenames):
 		n = 0
 		bed_chromosomes = bed_file.loc[:, "chr"].values
 		
-		result_file = bed_file.copy()
+		#result_file = bed_file.copy()
 		columns =["intervals", "interactions", "overlaps", \
 				"cycle_rank", "score"]
+		base_columns = columns[:]
 		
-		#ranges = ["5", "10", "20", "30"]
 		if genes is not None:
 			for i in genes["gene_type"].unique():
 				for j in ranges:
 					columns.append(f"{i}_range_{j}_NumOfInv")
 					columns.append(f"{i}_range_{j}_NumOfGen")
 					columns.append(f"{i}_range_{j}_NamOfGen")
+
+		result_data = [[None] * len(columns)] * bed_file.index.size
+		result_file = pd.DataFrame(result_data, columns=columns)
 		
 		# adding columns to result file
 		for i in columns:
@@ -307,6 +309,7 @@ def worker(bedpe_filename, bed_filenames):
 				result_file[i] = ""
 			else:
 				result_file[i] = 0
+		result_file = pd.concat([bed_file, result_file], axis = 1)
 		for common_chromosome in np.intersect1d(bed_chromosomes, bedpe_chromosomes):
 			mutations = bed_file.loc[ bed_file.chr == common_chromosome , ["start", "end"]]
 			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_intervals.pickle", "rb") as f:
@@ -323,6 +326,13 @@ def worker(bedpe_filename, bed_filenames):
 				f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
 				gene_interval = \
 						find_driver_overlaps(f_genes, intervals)
+				f_columns = base_columns[:]
+				for i in f_genes["gene_type"].unique():
+					for j in ranges:
+						f_columns.append(f"{i}_range_{j}_NumOfInv")
+						f_columns.append(f"{i}_range_{j}_NumOfGen")
+						f_columns.append(f"{i}_range_{j}_NamOfGen")
+
 			
 			for index, mutation in mutations.iterrows():
 				initials = initial_intervals(intervals, mutation)
@@ -330,7 +340,7 @@ def worker(bedpe_filename, bed_filenames):
 						gene_interval, f_genes, mutation)
 				if count_values is not None:
 					result_file.loc[ (result_file.chr == common_chromosome) & \
-							(result_file.start == mutation.start), columns] = count_values
+							(result_file.start == mutation.start), f_columns] = count_values
 				
 				if verbose:
 					t2 = time.time()
@@ -365,14 +375,17 @@ def worker_mutation_parallel(bedpe_filenames, bed_filename):
 		result_file = bed_file.copy()
 		columns =["intervals", "interactions", "overlaps", \
 				"cycle_rank", "score"]
+		base_columns = columns[:]
 		
-		#ranges = ["5", "10", "20", "30"]
 		if genes is not None:
 			for i in genes["gene_type"].unique():
 				for j in ranges:
 					columns.append(f"{i}_range_{j}_NumOfInv")
 					columns.append(f"{i}_range_{j}_NumOfGen")
 					columns.append(f"{i}_range_{j}_NamOfGen")
+
+		result_data = [[None] * len(columns)] * bed_file.index.size
+		result_file = pd.DataFrame(result_data, columns=columns)
 		
 		# adding columns to result file
 		for i in columns:
@@ -382,7 +395,9 @@ def worker_mutation_parallel(bedpe_filenames, bed_filename):
 				result_file[i] = ""
 			else:
 				result_file[i] = 0
-	
+
+		result_file = pd.concat([bed_file, result_file], axis = 1)
+		
 		for common_chromosome in np.intersect1d(bed_chromosomes, bedpe_chromosomes):
 			mutations = bed_file.loc[ bed_file.chr == common_chromosome , ["start", "end"]]
 			with open(f".pickles/{base_bedpe_name}_{common_chromosome}_intervals.pickle", "rb") as f:
@@ -399,6 +414,12 @@ def worker_mutation_parallel(bedpe_filenames, bed_filename):
 				f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
 				gene_interval = \
 						find_driver_overlaps(f_genes, intervals)
+				f_columns = base_columns[:]
+				for i in f_genes["gene_type"].unique():
+					for j in ranges:
+						f_columns.append(f"{i}_range_{j}_NumOfInv")
+						f_columns.append(f"{i}_range_{j}_NumOfGen")
+						f_columns.append(f"{i}_range_{j}_NamOfGen")
 			
 			for index, mutation in mutations.iterrows():
 				initials = initial_intervals(intervals, mutation)
@@ -406,7 +427,7 @@ def worker_mutation_parallel(bedpe_filenames, bed_filename):
 						gene_interval, f_genes, mutation)
 				if count_values is not None:
 					result_file.loc[ (result_file.chr == common_chromosome) & \
-							(result_file.start == mutation.start), columns] = count_values
+							(result_file.start == mutation.start), f_columns] = count_values
 				
 				if verbose:
 					t2 = time.time()
