@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import Pool
 import networkx as nx
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import argparse
@@ -342,7 +344,7 @@ def worker(bedpe_filename, bed_filenames):
 					result_file.loc[ (result_file.chr == common_chromosome) & \
 							(result_file.start == mutation.start), f_columns] = count_values
 				
-				if verbose:
+				if not verbose:
 					t2 = time.time()
 					print(f"for {base_bedpe_name}_{base_bed_name}_result.csv:", end=" ")
 					sys.stdout.write(f"{n}/{total_mutation}, time: {round(t2-t1, 2)} seconds\r")
@@ -354,7 +356,7 @@ def worker(bedpe_filename, bed_filenames):
 		target = metadata.loc[base_bedpe_name, "Experiment target"]
 		result_file.to_csv(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv",\
 				index=False)
-		if verbose:
+		if not verbose:
 			print(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv has been written")
 			print(f"{output_dir}/{base_bedpe_name}_{base_bed_name}.csv took {t2-t1} second(s)")
 			
@@ -525,27 +527,25 @@ def main():
 			for bedpe_file_name in args.bedpe_files:
 				worker(bedpe_file_name, args.bed_files)
 		else:
-			pool = Pool(processes=os.cpu_count())
-			jobs = []
-			for bedpe_file_name in args.bedpe_files:
-				jobs.append(pool.apply_async(worker, \
-						args = (bedpe_file_name, args.bed_files)))
-			pool.close()
-			pool.join()
+			#pool = Pool(processes=os.cpu_count())
+			print(f"Number of Cores: {os.cpu_count()}")
+			with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+				features = [ executor.submit(worker, bedpe_file_name, \
+						args.bed_files) for bedpe_file_name in args.bedpe_files]
+				for feature in tqdm(as_completed(features), total=len(features), desc="Processing"):
+					feature.result()
 			
 	else:
 		if args.serial:
 			for bed_file in args.bed_files:
 				worker_mutation_parallel(args.bedpe_files, bed_file)
 		else:
-			pool = Pool(processes=os.cpu_count())
 			print(f"Number of Cores: {os.cpu_count()}")
-			jobs = []
-			for bed_file in args.bed_files:
-				jobs.append(pool.apply_async(worker_mutation_parallel, \
-						args = (args.bedpe_files, bed_file)))
-			pool.close()
-			pool.join()
+			with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+				features = [ executor.submit(worker_mutation_parallel, args.bedpe_files, \
+						bed_file) for bed_file in args.bed_files]
+				for feature in tqdm(as_completed(features), total=len(features), desc="Processing"):
+					feature.result()
 
 			
 	
