@@ -26,22 +26,25 @@ conda activate mutation_network
 
 ## Usage
 
-usage: python MutationNetwork.py [-h] --bed\_files BED\_FILES [BED\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [--debug [DEBUG]] [-ow] [-v] [-r] [-s] [-dg [DRIVERGENES]] -md METADATA [-r] [-s] [--ranges RANGES [RANGES ...]] [--parallel-bedpe]
+usage: MutationNetwork.py [-h] --vcf\_files VCF\_FILES [VCF_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [-ow] [-v] [--genes [GENES]] [-r] [--ranges RANGES [RANGES ...]] [-pb | -pv | -sb | -sv]
 
 example: 
 
 ```
-python MutationNetwork.py --bedpe_files bedpe/*.bedpe.gz --bed_files mutations.csv -dg driverGenes.csv -md metadata.tsv -v --ranges 0 10 20
+python MutationNetwork.py --vcf_files mutations.vcf -o output --bedpe_files ENCFF597SQA.bedpe.gz --genes gencode.v47.basic.annotation.gtf.gz --ranges 0 1 2 3 4 5 -v
+
 ```
+
 ## Input Files
 
-bedpe\_files --
+gencode (\*.annotation.gtf.gz) -- gencode file that has been downloaded from <https://www.gencodegenes.org/human/> (content: "Basic gene annotation", Regions: "CHR", Dowload: "GTF").
 
-bed\_file --
+loop file (.bedpe) -- loop files store long range chromosomal interactions and can be retrived from <https://www.encodeproject.org/>
 
-driver\_genes --
+## Result file: binary matrix for each range
 
-metadata --
+Each row represents a mutation sample file and each column represents genes given in the annotation file.
+If correspoding sample file and gene is 1, it represents for the given range, at least one mutation in the sample reaches the gene via long range interactions.
 
 ## Method
 
@@ -65,73 +68,4 @@ metadata --
 
 ![image](img/mutation_effect.png)
 
-## Result file columns
 
-intervals - number of intervals that the given mutation affects directly or indirectly
-
-interactions - number of interactions between intervals that the given mutation affects directly or indirectly
-
-overlaps - number of overlaps between intervals that the given mutation affects directly or indirectly
-
-cycle\_rank - cycles rank of the graph which is created by intervals that the given mutation affects directly or indirectly
-
-score - average score of the interactions between intervals that the given mutation affects directly or indirectly
-
-{GeneType}\_range\_X\_NumOfInv - number of intervals that has overlap with given genes within X range
-
-{GeneType}\_range\_X\_NumOfGen - number of genes that has shortes path lenght of X from the mutation in the graph
-
-{GeneType}\_range\_X\_NamOfGen - name of genes that has shortes path lenght of X from the mutation in the graph
-
-# MergeGenes.py
-
-usage: MergeGenes.py [-h] -n NAMES -t TYPE -g GENCODE [-o [OUTPUT]]
-
-example: 
-
-```
-python MergeGenes.py -names gene_name_sample.csv -type oncogenes -gencode gencode.v47.basic.annotation.gtf.gz
-```
-
-## Input Files
-
-names (hugo\_symbols) -- at least one column csv file that contains hugo symbol of genes (Columns should be called "Hugo Symbols").
-
-type (oncogenes) -- an arbitrary gene type
-
-gencode (\*.annotation.gtf.gz) -- gencode file that has been downloaded from <https://www.gencodegenes.org/human/> (content: "Basic gene annotation", Regions: "CHR", Dowload: "GTF").
-
-# filter\_genes.py
-
-usage: python filter\_genes.py GENE\_TYPE1 GENE\_TYPE2
-
-example: 
-
-```
-python filter_genes.py lncRNA snRNA
-```
-
-Gene types should be from genecode\_statistics.csv
-
-# jaccard\_index\_plot.py
-
-usage: python jaccard\_index\_plot.py FILENAME
-
-Input file should be the output of MutationNetwork.py and should have only one type of gene such as protein-coding genes.
-
-example:
-```
-python jaccard\_index\_plot.py result/ENCFF004MDS_sample-1.csv
-```
-
-# gene\_similarity\_matrix.py
-
-usage: python gene\_similarity\_matrix.py FILENAME [FILENAME]
-
-Input file should be the output of MutationNetwork.py and should have only one type of gene such as protein-coding genes.
-More than one file can be used.
-
-example:
-```
-python gene\_similarity\_matrix.py result/ENCFF004MDS_sample-*
-```
