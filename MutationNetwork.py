@@ -157,6 +157,7 @@ def read_genes(gtf_filename):
 	
 	genes = genes_gtf[["Chromosome", "Start", "End", "Strand", "gene_name"]][(genes_gtf.Feature=="gene")].df
 	
+	genes.drop_duplicates(subset=["gene_name"], ignore_index=True, inplace=True)
 	genes.Chromosome = genes.Chromosome.str.replace("chr", "")
 	
 	genes["gene_number"] = genes.index
@@ -281,18 +282,16 @@ def workerParallelVCF(bedpe_filenames, vcf_filename):
 					
 			f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
 			gene_interval = find_driver_overlaps(f_genes, intervals)
-			range_0_genes = [set() ] * mutations.size
+			range_0_genes = set()
 			
 			for index, mutation in mutations.items():
 				for ind, mut in f_genes.loc[ ( ( mutation > f_genes.Start) &\
 					( mutation < f_genes.End ) ),:].iterrows():
-					if range_0_genes[index] == set():
-						range_0_genes[index] = { mut["gene_number"] }
-					else:
-						range_0_genes[index].add( mut["gene_number"] )
+					range_0_genes.add(mut["gene_number"])
 		
+			genes_array[:, list(range_0_genes)] = 1
 			for index, mutation in mutations.items():
-				gene_interval[0] = set( range_0_genes[index] )
+				
 				initials = initial_intervals(intervals, mutation)
 				if len(initials) == 0:
 					continue
@@ -334,7 +333,7 @@ def main():
 			help="If True, pickle files will be removed after calulation finished")
 	parser.add_argument("--ranges", \
 			help="custom ranges (shortest path from mutation) should be greater than 0 integers",\
-			nargs="+", default = ["0", "5", "10"])
+			nargs="?", default = "range(11)")
 	group.add_argument("-pb", "--parallelBEDPE", help="set parallel mode \
 			for bedpe files (defaul is parallelVCF)", action="store_true")
 	group.add_argument("-pv", "--parallelVCF", help="set parallel mode \
@@ -368,11 +367,8 @@ def main():
 	only_write = args.only_write
 	verbose = args.verbose
 	
-	for i in args.ranges:
-		if (not i.isnumeric()):
-			print("not numeric or less than 0 or not an integer")
-			sys.exit()
-	ranges = sorted(list(set(map(int, args.ranges))))
+	ranges = eval(args.ranges)
+	ranges = sorted(list(set(map(int, ranges))))
 	
 	# create output directory
 	current_dir = os.path.abspath(os.getcwd())
