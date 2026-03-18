@@ -2,7 +2,7 @@
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import Pool
-import networkx as nx
+from collections import deque
 import pyranges as pr
 import pandas as pd
 import numpy as np
@@ -127,26 +127,18 @@ def check_pickle_file(bedpe_file_name):
 def read_vcf(vcf_filename):
 	vcf_file = pd.read_csv(vcf_filename, comment = "#", sep = "\t", usecols=[0, 1],\
 			names = ["chr", "pos"], dtype = {"chr": str, "pos": int})
-	vcf_file["chr"] = vcf_file["chr"].str.replace("chr", "")
+	
+	if vcf_file.loc[0, "chr"].startswith("chr"):
+		vcf_file["chr"] = vcf_file["chr"].str.replace("chr", "")
+	
 	return vcf_file
-	for i in ["chr", "start", "end"]: #change here
-		if i not in bed_file.columns:
-			print(f"{i} column is not in mutation file")
-			print(bed_file.columns)
-	cols = bed_file.columns.tolist()
-	cols.remove("chr")
-	cols.remove("start")
-	cols.remove("end")
-	cols = ["chr", "start", "end"] + cols
-	bed_file = bed_file.astype({"chr": str})
-	return bed_file[cols]
 
 
 def initial_intervals(sorted_intervals, mutation):
 	mutants = set()
 	
-	for i in sorted_intervals[ (mutation > sorted_intervals[:, 0]) \
-			& (mutation < sorted_intervals[:, 1] )]:
+	for i in sorted_intervals[ (mutation >= sorted_intervals[:, 0]) \
+			& (mutation <= sorted_intervals[:, 1] )]:
 		mutants.add( i[2] )
 	
 	return mutants
@@ -196,62 +188,37 @@ def find_driver_overlaps(genes, intervals):
 					gene_interval[array[j, 2]] = { inv[2] }
 			j += 1
 		
-	gene_interval[0] = set()
-	
 	return gene_interval
 
 
-def counter(array, initials, scores, gene_interval, genes_array):
-
-	# if initials set is empty, there is no overlap at all
-	if len(initials) == 0:
-		return None
+def counter(array, initials, gene_interval, genes_array):
+	paths = {0: 0}
+	queue = deque({0})
 	
-	# assing initial interval to visited intervals
-	visited_intervals = set( initials )
-	indices = set( [ -1 * i for i in visited_intervals ] )
-	
-	G= nx.Graph()
 	for i in initials:
-		G.add_edge( i, -i )
-		G.add_edge( 0, i)
+		paths[i] = 1
+		queue.append(i)
+	queue.popleft()
 	
-	score_counter = 0
+	while queue:
+		current = queue.popleft()
+		current_dist = paths[current]
+		
+		for neighbor in array[current]:
+			# If the neighbor hasn't been visited (distance is still inf)
+			if neighbor not in paths:
+				paths[neighbor] = current_dist + 1
+				queue.append(neighbor)
+		if -current not in paths:
+			paths[-current] = current_dist + 1
+			queue.append(-current)	
 	
-	visited_intervals = visited_intervals | indices
-	overlaps = set()
-	
-	c = 0
 	max_range = max(ranges)
-	while c <= max_range:
-		# working in TRUBA with tuple(indices) instead of *indices
-		overlaps = set.union( *array[[ *indices ]] )
-		for i in indices:
-			for j in array[i]:
-				G.add_edge(i, j)
-			G.add_edge(i, -i)
-		
-		indices = set( [-i for i in overlaps] )
-		indices = indices.difference(visited_intervals)
-		
-		if not indices:
-			break
-		
-		visited_intervals = visited_intervals | indices | overlaps
 	
-	if gene_interval == None:
-		return result
-	
-	paths = nx.single_source_dijkstra_path_length(G, 0, cutoff= max_range )
-	
-	set_ranges = [set()] * (max_range + 1)
-	
-	for  i in paths.keys() & gene_interval.keys():
-		set_ranges[ paths[i] ] = set_ranges[ paths[i] ] | gene_interval[i]
-	
-	for i in range(len(ranges)):
-		for j in range(ranges[i]+1 ):
-			genes_array[ i , list(set_ranges[j]) ] = 1
+	for r in ranges:
+		nodes = [gene_interval[node] for node in paths.keys() & gene_interval.keys() if paths[node] <= r]
+		nodes = set.union(*nodes)
+		genes_array[ranges.index(r), list(nodes)] += 1
 
 
 def workerParallelVCF(bedpe_filenames, vcf_filename):
@@ -282,34 +249,51 @@ def workerParallelVCF(bedpe_filenames, vcf_filename):
 					
 			f_genes = genes.loc[genes.Chromosome == common_chromosome, :]
 			gene_interval = find_driver_overlaps(f_genes, intervals)
-			range_0_genes = set()
+			range_0_genes = [set() ] * mutations.size
 			
 			for index, mutation in mutations.items():
 				for ind, mut in f_genes.loc[ ( ( mutation > f_genes.Start) &\
 					( mutation < f_genes.End ) ),:].iterrows():
-					range_0_genes.add(mut["gene_number"])
+					if range_0_genes[index] == set():
+						range_0_genes[index] = { mut["gene_number"] }
+					else:
+						range_0_genes[index].add( mut["gene_number"] )
 		
-			genes_array[:, list(range_0_genes)] = 1
 			for index, mutation in mutations.items():
-				
+				gene_interval[0] = set( range_0_genes[index] )
 				initials = initial_intervals(intervals, mutation)
-				if len(initials) == 0:
-					continue
-				counter(array, initials, scores,\
-						gene_interval, genes_array)
+				counter(array, initials, gene_interval, genes_array)
 		
 		t12 = time.time()
 		print(f"{base_vcf_name} took {t12 - t11: .2f} sec")
-		for i in range(len(ranges)):
-			output_file = f"{output_dir}/gene_similarity_range_{ranges[i]}_all.csv"
-			
-			# Build the full row as a string
-			row_data = ",".join(map(str, genes_array[i, :]))
-			line = f"{base_vcf_name},,{row_data}\n"
-			
-			with open(output_file, "a") as f:
-			    f.write(line)
+		
+		if "count" in output_format:
+			for i in range(len(ranges)):
+				output_file = f"{output_dir}/gene_similarity_range_{ranges[i]}_count.csv"
+				
+				# Build the full row as a string
+				row_data = ",".join(map(str, genes_array[i, :]))
+				line = f"{base_vcf_name},{row_data}\n"
+				
+				with open(output_file, "a") as f:
+					f.write(line)
+		
+		if "binary" in output_format:
+			genes_array[genes_array > 0] = 1
+			for i in range(len(ranges)):
+				output_file = f"{output_dir}/gene_similarity_range_{ranges[i]}_binary.csv"
+				
+				# Build the full row as a string
+				row_data = ",".join(map(str, genes_array[i, :]))
+				line = f"{base_vcf_name},{row_data}\n"
+				
+				with open(output_file, "a") as f:
+					f.write(line)
 
+
+def workerParallelBedpe(bedpe_file_name, vcf_files):
+	print("BEDPE-wise function is not available yet.")
+	sys.exit(0)
 
 
 def main():
@@ -334,6 +318,8 @@ def main():
 	parser.add_argument("--ranges", \
 			help="custom ranges (shortest path from mutation) should be greater than 0 integers",\
 			nargs="?", default = "range(11)")
+	parser.add_argument("--output_format", help="format for output matrix: count and/or binary",\
+			choices=["count", "binary"], default = "count", nargs = "+")
 	group.add_argument("-pb", "--parallelBEDPE", help="set parallel mode \
 			for bedpe files (defaul is parallelVCF)", action="store_true")
 	group.add_argument("-pv", "--parallelVCF", help="set parallel mode \
@@ -348,6 +334,8 @@ def main():
 	print(args.output)
 	print("only-write mode:", end=" ")
 	print(args.only_write)
+	print("output_format:", end=" ")
+	print(args.output_format)
 	print("mode:", end=" ")
 	
 	if not (args.parallelBEDPE or args.parallelVCF or args.serialBEDPE or args.serialVCF):
@@ -361,9 +349,10 @@ def main():
 	else:
 		print("serialVCF")
 	
-	global output_dir, only_write, verbose, genes, ranges
-	genes = read_genes(args.genes)
+	global output_dir, only_write, verbose, genes, ranges, output_format
 	
+	output_format = args.output_format
+	genes = read_genes(args.genes)
 	only_write = args.only_write
 	verbose = args.verbose
 	
@@ -379,10 +368,16 @@ def main():
 	if not os.path.isdir(tmp_dir):
 		os.makedirs(tmp_dir)
 	
-	headers = np.array( ["ID", "subtype", *genes.gene_name] )
-	for i in range(len(ranges)):
-		np.savetxt( f"{output_dir}/gene_similarity_range_{ranges[i]}_all.csv", \
-				[ headers ], delimiter = ',', fmt='%s') 
+	headers = np.array( ["sample", *genes.gene_name] )
+	if "count" in output_format:
+		for i in range(len(ranges)):
+			np.savetxt( f"{output_dir}/gene_similarity_range_{ranges[i]}_count.csv", \
+					[ headers ], delimiter = ',', fmt='%s')
+	if "binary" in output_format:
+		for i in range(len(ranges)):
+			np.savetxt( f"{output_dir}/gene_similarity_range_{ranges[i]}_binary.csv", \
+					[ headers ], delimiter = ',', fmt='%s') 
+
 	
 	args.vcf_files = sorted(args.vcf_files, key = lambda x: os.path.getsize(x), reverse=True )	
 	
