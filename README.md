@@ -26,12 +26,15 @@ conda activate mutation_network
 
 ## Usage
 
-usage: MutationNetwork.py [-h] --vcf\_files VCF\_FILES [VCF_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [-ow] [-v] [--genes [GENES]] [-r] [--ranges RANGES [RANGES ...]] [-pb | -pv | -sb | -sv]
+usage: MutationNetwork.py [-h] --vcf\_files VCF\_FILES [VCF\_FILES ...] [-o [OUTPUT]] --bedpe\_files BEDPE\_FILES [BEDPE\_FILES ...] [-ow] [-v] [--genes [GENES]] [-r] [--ranges [RANGES]] 
+[--output\_format {count,binary} [{count,binary} ...]] [-pb | -pv | -sb | -sv]
 
 example: 
 
 ```
-python MutationNetwork.py --vcf_files mutations.vcf -o output --bedpe_files ENCFF597SQA.bedpe.gz --genes gencode.v47.basic.annotation.gtf.gz --ranges 0 1 2 3 4 5 -v
+python MutationNetwork.py --vcf_files mutations.vcf -o output --bedpe_files ENCFF597SQA.bedpe.gz --genes gencode.v47.basic.annotation.gtf.gz --ranges "range(11)" -v -sv --output_format binary
+
+python MutationNetwork.py --vcf_files mutations.vcf -o output --bedpe_files ENCFF597SQA.bedpe.gz --genes gencode.v47.basic.annotation.gtf.gz --ranges "[0, 1, 2, 3, 10]" -pb --output_format binary count
 
 ```
 
