@@ -138,7 +138,7 @@ def initial_intervals(sorted_intervals, mutation):
 	mutants = set()
 	
 	for i in sorted_intervals[ (mutation >= sorted_intervals[:, 0]) \
-			& (mutation <= sorted_intervals[:, 1] )]:
+			& (mutation < sorted_intervals[:, 1] )]:
 		mutants.add( i[2] )
 	
 	return mutants
@@ -174,7 +174,7 @@ def find_driver_overlaps(genes, intervals):
 	for inv in array:
 		i += 1
 		j = i + 1
-		while j < lt and inv[1] > array[j][0] :
+		while j < lt and inv[1] > array[j][0]:
 			
 			if array[j, 3] and not inv[3]:
 				if inv[2] in gene_interval:
@@ -252,7 +252,7 @@ def workerParallelVCF(bedpe_filenames, vcf_filename):
 			range_0_genes = [set() ] * mutations.size
 			
 			for index, mutation in mutations.items():
-				for ind, mut in f_genes.loc[ ( ( mutation > f_genes.Start) &\
+				for ind, mut in f_genes.loc[ ( ( mutation >= f_genes.Start) &\
 					( mutation < f_genes.End ) ),:].iterrows():
 					if range_0_genes[index] == set():
 						range_0_genes[index] = { mut["gene_number"] }
@@ -377,7 +377,6 @@ def main():
 		for i in range(len(ranges)):
 			np.savetxt( f"{output_dir}/gene_similarity_range_{ranges[i]}_binary.csv", \
 					[ headers ], delimiter = ',', fmt='%s') 
-
 	
 	args.vcf_files = sorted(args.vcf_files, key = lambda x: os.path.getsize(x), reverse=True )	
 	
